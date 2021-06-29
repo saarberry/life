@@ -37,7 +37,7 @@ export default defineComponent({
             for (let currentRow = 0; currentRow < rows; currentRow++) {
                 const row: boolean[] = [];
                 for (let currentCol = 0; currentCol < cols; currentCol++) {
-                    const alive = Math.random() > 0.8;
+                    const alive = Math.random() > 0.6;
                     row.push(alive);
                 }
 
@@ -45,7 +45,40 @@ export default defineComponent({
             }
         }
 
+        // Generate initial cell state.
         generateCellsForWindow();
+
+        // Loop at a set interval to play the game.
+        const loop = setInterval(() => {
+            // Copy the cell grid as a reference so we know what
+            // state we're evolving from.
+            let previousCellGrid = cellGrid.value.map((row) => [...row]);
+
+            // Modify the actual cellGrid.
+            cellGrid.value = cellGrid.value.map((row, x) => {
+                return row.map((alive, y) => {
+                    // Get all the neighbours.
+                    let neighbours = [
+                        previousCellGrid?.[x - 1]?.[y - 1] || false,
+                        previousCellGrid?.[x - 1]?.[y] || false,
+                        previousCellGrid?.[x - 1]?.[y + 1] || false,
+
+                        previousCellGrid?.[x]?.[y - 1] || false,
+                        previousCellGrid?.[x]?.[y + 1] || false,
+
+                        previousCellGrid?.[x + 1]?.[y - 1] || false,
+                        previousCellGrid?.[x + 1]?.[y] || false,
+                        previousCellGrid?.[x + 1]?.[y + 1] || false,
+                    ];
+
+                    let livingNeighbours = neighbours.filter(
+                        (alive) => alive === true
+                    ).length;
+
+                    return livingNeighbours > 1 && livingNeighbours <= 3;
+                });
+            });
+        }, 250);
 
         return { cellGrid };
     },
