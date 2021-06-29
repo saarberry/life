@@ -4,6 +4,7 @@
             v-for="(alive, x) in row"
             :key="`row-${y}-col-${x}`"
             :alive="alive"
+            :clickable="!isRunning"
             @click="toggleCell(x, y)"
         />
     </div>
@@ -103,7 +104,9 @@ export default defineComponent({
          * @param {number} row
          */
         function toggleCell(col: number, row: number) {
-            cellGrid.value[row][col] = !cellGrid.value[row][col];
+            if (!isRunning.value) {
+                cellGrid.value[row][col] = !cellGrid.value[row][col];
+            }
         }
 
         return { cellGrid, toggleCell, start, stop, isRunning };

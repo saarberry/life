@@ -1,5 +1,8 @@
 <template>
-    <div class="Cell" :class="{ 'Cell--alive': alive }"></div>
+    <div
+        class="Cell"
+        :class="{ 'Cell--alive': alive, 'Cell--clickable': clickable }"
+    ></div>
 </template>
 
 <script lang="ts">
@@ -8,6 +11,10 @@ export default defineComponent({
     name: "Cell",
     props: {
         alive: {
+            type: Boolean,
+            required: true,
+        },
+        clickable: {
             type: Boolean,
             required: true,
         },
@@ -25,5 +32,13 @@ export default defineComponent({
 
 .Cell--alive {
     @apply opacity-100;
+}
+
+.Cell--clickable {
+    @apply cursor-pointer;
+}
+
+.Cell--clickable:hover {
+    @apply opacity-25;
 }
 </style>
