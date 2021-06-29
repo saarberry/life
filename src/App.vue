@@ -4,15 +4,16 @@
             v-for="(alive, x) in row"
             :key="`row-${y}-col-${x}`"
             :alive="alive"
-            @click="onClick(x, y)"
+            @click="toggleCell(x, y)"
         />
     </div>
 
-    <button class="Start" @click="start">Start</button>
+    <button class="Button" @click="start" v-if="!isRunning">Start</button>
+    <button class="Button" @click="stop" v-else>Stop</button>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
+import { computed, defineComponent, ref } from "vue";
 import Cell from "./components/Cell.vue";
 
 export default defineComponent({
@@ -26,76 +27,86 @@ export default defineComponent({
         // with just a boolean to indicate if the cell is alive or not.
         const cellGrid = ref<boolean[][]>([]);
 
-        // Make just enough cells to cover the screen.
+        /**
+         * Make just enough cells to cover the screen.
+         * @return {void}
+         */
         function generateCellsForWindow() {
             const colCount = Math.floor(window.innerWidth / cellSize);
             const rowCount = Math.floor(window.innerHeight / cellSize);
 
-            // Clear the existing cell map.
-            let rows: boolean[][] = [];
-
-            // Fill it with new cells.
-            for (let currentRow = 0; currentRow < rowCount; currentRow++) {
-                let row: boolean[] = [];
-                for (let currentCol = 0; currentCol < colCount; currentCol++) {
-                    const alive = Math.random() > 0.9;
-                    row.push(false);
-                }
-
-                rows.push(row);
-            }
-
-            cellGrid.value = rows;
+            // Fill the grid with dead cells.
+            cellGrid.value = Array.from({ length: rowCount }, () =>
+                Array.from({ length: colCount }, () => false)
+            );
         }
 
         // Generate initial cell state.
         generateCellsForWindow();
 
-        // Loop at a set interval to play the game.
-        function start() {
-            const loop = setInterval(() => {
-                // Copy the cell grid as a reference so we know what
-                // state we're evolving from.
-                let previousCellGrid = cellGrid.value.map((row) => [...row]);
+        /**
+         * Iterate for the next state.
+         * @return {void}
+         */
+        function evolve() {
+            // Go through every cell to see what its new value should be.
+            cellGrid.value = cellGrid.value.map((row, x, grid) => {
+                return row.map((alive, y) => {
+                    // Get a count of living neighbours.
+                    let livingNeighbourCount = [
+                        grid?.[x - 1]?.[y - 1] || false,
+                        grid?.[x - 1]?.[y] || false,
+                        grid?.[x - 1]?.[y + 1] || false,
 
-                // Modify the actual cellGrid.
-                cellGrid.value = cellGrid.value.map((row, x) => {
-                    return row.map((alive, y) => {
-                        // Get all the neighbours.
-                        let neighbours = [
-                            previousCellGrid?.[x - 1]?.[y - 1] || false,
-                            previousCellGrid?.[x - 1]?.[y] || false,
-                            previousCellGrid?.[x - 1]?.[y + 1] || false,
+                        grid?.[x]?.[y - 1] || false,
+                        grid?.[x]?.[y + 1] || false,
 
-                            previousCellGrid?.[x]?.[y - 1] || false,
-                            previousCellGrid?.[x]?.[y + 1] || false,
+                        grid?.[x + 1]?.[y - 1] || false,
+                        grid?.[x + 1]?.[y] || false,
+                        grid?.[x + 1]?.[y + 1] || false,
+                    ].filter((alive) => alive).length;
 
-                            previousCellGrid?.[x + 1]?.[y - 1] || false,
-                            previousCellGrid?.[x + 1]?.[y] || false,
-                            previousCellGrid?.[x + 1]?.[y + 1] || false,
-                        ];
-
-                        let livingNeighbours = neighbours.filter(
-                            (alive) => alive === true
-                        ).length;
-
-                        if (alive) {
-                            return (
-                                livingNeighbours > 1 && livingNeighbours <= 3
-                            );
-                        }
-
-                        return livingNeighbours === 3;
-                    });
+                    return (
+                        (livingNeighbourCount === 2 && alive) ||
+                        livingNeighbourCount === 3
+                    );
                 });
-            }, 150);
+            });
         }
 
-        function onClick(col: number, row: number) {
+        // The game runs on a setInterval loop.
+        const loop = ref<number | undefined>(undefined);
+
+        // If we're running or not.
+        const isRunning = computed(() => loop.value !== undefined);
+
+        /**
+         * Start game.
+         * @return {void}
+         */
+        function start() {
+            loop.value = setInterval(evolve, 150);
+        }
+
+        /**
+         * Stop game
+         * @return {void}
+         */
+        function stop() {
+            clearInterval(loop.value);
+            loop.value = undefined;
+        }
+
+        /**
+         * Toggle the cell at the given coordinates.
+         * @param {number} col
+         * @param {number} row
+         */
+        function toggleCell(col: number, row: number) {
             cellGrid.value[row][col] = !cellGrid.value[row][col];
         }
 
-        return { cellGrid, onClick, start };
+        return { cellGrid, toggleCell, start, stop, isRunning };
     },
 });
 </script>
@@ -111,7 +122,7 @@ export default defineComponent({
     @apply flex flex-row items-center;
 }
 
-.Start {
+.Button {
     @apply absolute;
     @apply top-0 right-0 m-1 px-4 py-0.5;
     @apply border-2 rounded border-pink-400 bg-pink-200 text-pink-600;
