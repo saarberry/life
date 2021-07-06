@@ -9,8 +9,16 @@
         />
     </div>
 
-    <button class="Button" @click="start" v-if="!isRunning">Start</button>
-    <button class="Button" @click="stop" v-else>Stop</button>
+    <div class="Presets" v-if="presetsVisible">
+        <button class="Button" @click="applyFlyerPreset">I want flyers!</button>
+    </div>
+
+    <div class="Buttons">
+        <button class="Button" @click="togglePresets">Presets</button>
+
+        <button class="Button" @click="start" v-if="!isRunning">Start</button>
+        <button class="Button" @click="stop" v-else>Stop</button>
+    </div>
 </template>
 
 <script lang="ts">
@@ -32,7 +40,7 @@ export default defineComponent({
          * Make just enough cells to cover the screen.
          * @return {void}
          */
-        function generateCellsForWindow() {
+        function generateCellsForWindow(): void {
             const colCount = Math.floor(window.innerWidth / cellSize);
             const rowCount = Math.floor(window.innerHeight / cellSize);
 
@@ -49,7 +57,7 @@ export default defineComponent({
          * Iterate for the next state.
          * @return {void}
          */
-        function evolve() {
+        function evolve(): void {
             // Go through every cell to see what its new value should be.
             cellGrid.value = cellGrid.value.map((row, x, grid) => {
                 return row.map((alive, y) => {
@@ -85,7 +93,7 @@ export default defineComponent({
          * Start game.
          * @return {void}
          */
-        function start() {
+        function start(): void {
             loop.value = setInterval(evolve, 150);
         }
 
@@ -93,7 +101,7 @@ export default defineComponent({
          * Stop game
          * @return {void}
          */
-        function stop() {
+        function stop(): void {
             clearInterval(loop.value);
             loop.value = undefined;
         }
@@ -102,14 +110,76 @@ export default defineComponent({
          * Toggle the cell at the given coordinates.
          * @param {number} col
          * @param {number} row
+         * @return {void}
          */
-        function toggleCell(col: number, row: number) {
+        function toggleCell(col: number, row: number): void {
             if (!isRunning.value) {
                 cellGrid.value[row][col] = !cellGrid.value[row][col];
             }
         }
 
-        return { cellGrid, toggleCell, start, stop, isRunning };
+        // If the presets are visible.
+        const presetsVisible = ref<boolean>(false);
+
+        /**
+         * Toggle the button visibility for the presets.
+         * @return {void}
+         */
+        function togglePresets(): void {
+            presetsVisible.value = !presetsVisible.value;
+        }
+
+        /**
+         * Generates an array with width amount of false values, but
+         * every given position being true.
+         * @param {number} width
+         * @param {number[]} positions
+         * @return {boolean[]}
+         */
+        function patternHelper(
+            width: number,
+            positions: number[] = []
+        ): boolean[] {
+            return Array.from({ length: width }, (value, i) =>
+                positions.includes(i)
+            );
+        }
+
+        /**
+         * Generate a gosper glider gun.
+         * @return {void}
+         */
+        function applyFlyerPreset(): void {
+            const gosperGliderGun = [
+                patternHelper(38),
+                patternHelper(38, [26]),
+                patternHelper(38, [24, 26]),
+                patternHelper(38, [14, 15, 22, 23, 36, 37]),
+                patternHelper(38, [13, 17, 22, 23, 36, 37]),
+                patternHelper(38, [2, 3, 12, 18, 22, 23]),
+                patternHelper(38, [2, 3, 12, 16, 18, 19, 24, 26]),
+                patternHelper(38, [12, 18, 26]),
+                patternHelper(38, [13, 17]),
+                patternHelper(38, [14, 15]),
+            ];
+
+            cellGrid.value = cellGrid.value.map((row, x) => {
+                return row.map((value, y) => {
+                    return gosperGliderGun?.[x]?.[y] || false;
+                });
+            });
+        }
+
+        return {
+            cellGrid,
+            toggleCell,
+            start,
+            stop,
+            isRunning,
+            presetsVisible,
+            togglePresets,
+            applyFlyerPreset,
+        };
     },
 });
 </script>
@@ -125,9 +195,20 @@ export default defineComponent({
     @apply flex flex-row items-center;
 }
 
-.Button {
+.Buttons {
     @apply absolute;
-    @apply top-0 right-0 m-1 px-4 py-0.5;
-    @apply border-2 rounded border-pink-400 bg-pink-200 text-pink-600;
+    @apply top-0 right-0 m-2;
+    @apply flex flex-row;
+}
+
+.Presets {
+    @apply absolute;
+    @apply top-10 right-0 m-2;
+    @apply flex flex-row;
+}
+
+.Button {
+    @apply m-1 px-4 py-0.5;
+    @apply border-2 rounded-md border-pink-400 bg-pink-200 text-pink-600;
 }
 </style>
