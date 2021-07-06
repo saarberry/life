@@ -38,7 +38,7 @@ export default defineComponent({
     @apply cursor-pointer;
 }
 
-.Cell--clickable:hover {
+.Cell--clickable:not(.Cell--alive):hover {
     @apply opacity-25;
 }
 </style>
